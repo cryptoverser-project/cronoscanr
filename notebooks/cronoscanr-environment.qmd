@@ -1,0 +1,189 @@
+---
+title: "cronoscanr-envirnoment"
+format: html
+editor: source
+---
+
+# Cronoscaner env 
+
+```{r}
+cro_env <- new.env(parent = .GlobalEnv)
+cro_env$api_key <- NULL
+cro_env$base_url <- "https://api.cronoscan.com"
+cro_env$crc <- list()
+```
+
+
+```{mermaid}
+%%| fig-width: 6.5
+flowchart LR
+  A[Hard edge] --> B(Round edge)
+  B --> C{Decision}
+```
+
+This is a [normal distribution]{id='normaldist'}.
+
+```{r}
+library(backports)
+library(latex2exp)
+txt <- "Also called Gaussian distribution"
+
+tippy::tippy_this(elementId = "normaldist", 
+                  tooltip = txt)
+```
+
+## Api Key
+
+Add an api key to the environment and recall it later easily. 
+
+```{r}
+cro_api_key <- function(api_key = NULL, initialize = FALSE){
+  
+  if (initialize) {
+    cro_env$api_key <- NULL
+  }
+
+  if (!is.null(api_key)) {
+    cro_env$api_key <- api_key
+    cli::cli_alert_success("Cronos Api Key added!")
+  } else {
+    return(cro_env$api_key)
+  }
+}
+```
+
+Let's add a fictitious api key: 
+
+```{r}
+my_apikey <- "jsjs039d8j32h0d03j2ns"
+cro_api_key(my_apikey)
+cro_api_key()
+```
+
+Let's now consider the case in which we want to change the api key.
+
+```{r}
+my_apikey2 <- "djdsiscjnueblciecnce"
+cro_api_key(my_apikey2, initialize = TRUE)
+cro_api_key()
+```
+
+Finally let's consider the case in which we want to remove the api key.
+
+```{r}
+cro_api_key(initialize = TRUE)
+cro_api_key()
+```
+
+## Token tags
+
+Consider now this system to manage easily token addresses. We can save an address in the envirnoment, specifying an unique id and use that to recall the address. Let's consider the case in which we want to add the WCRO token address to the environment. 
+
+```{r}
+cro_add_token <- function(address = NULL, id = NULL){
+  
+  id <- tolower(id)
+  all_id <- tolower(names(cro_env$crc))
+  check_id <- !(id %in% all_id)
+  
+  if (check_id) {
+    cro_env$crc[[id]] <- tolower(address)
+    msg <- paste0('Token with id "', id, '" added!')
+    cli::cli_alert_success(msg)
+  } else {
+    wrn <- paste0('A token with id "', id, '" already exists!')
+    cli::cli_alert_danger(wrn)
+  }
+}
+```
+
+```{r}
+cro_add_token("0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23", id = "wcro")
+```
+
+
+
+Let's use another function to recall it
+
+```{r}
+cro_token <- function(id = NULL){
+  
+  id <- tolower(id)
+  all_id <- tolower(names(cro_env$crc))
+  check_id <- all_id %in% tolower(id)
+  
+  if (!purrr::is_empty(check_id)) {
+    return(cro_env$crc[[id]])
+  } else {
+    wrn <- paste0('A token with id "', id, '" not exists!')
+    cli::cli_alert_warning(wrn)
+    return(NULL)
+  }
+}
+```
+
+```{r}
+cro_token("wcro")
+```
+
+
+If we try to add another token with the same id we will receive an error: 
+
+```{r}
+cro_add_token("0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23", id = "wcro")
+```
+
+In order to remove or modify the address for a token we need another function
+
+```{r}
+cro_rm_token <- function(id = NULL){
+  
+  id <- tolower(id)
+  all_id <- tolower(names(cro_env$crc))
+  check_id <- id %in% all_id
+  
+  if (check_id) {
+    cro_env$crc[[id]] <- NULL
+    msg <- paste0('Token with id "', id, '" removed!')
+    cli::cli_alert_success(msg)
+  } else {
+    wrn <- paste0('A token with id "', id, '" not exists!')
+    cli::cli_alert_danger(wrn)
+  }
+}
+```
+
+```{r}
+cro_rm_token(id = "wcro")
+cro_token("wcro")
+```
+
+## Save and load enviroments
+
+```{r}
+cro_save_env <- function(path = getwd(), id = ""){
+  
+  id <- as.character(id)
+  file_name <- paste0("cro_env", ifelse(id == "", "", "_"), id, ".RData")
+  file_path <- paste0(path, "/", file_name)
+  save(cro_env, file = file_path)
+  msg <- paste0('cro env with id "', id, '" saved in ', file_path, '!')
+  cli::cli_alert_success(msg)
+}
+
+cro_load_env <- function(path = getwd(), id = "", envir = .GlobalEnv){
+  id <- as.character(id)
+  file_name <- paste0("cro_env", ifelse(id == "", "", "_"), id, ".RData")
+  file_path <- paste0(path, "/", file_name)
+  load(file_path, envir = envir)
+  msg <- paste0('cro env with id "', id, '" loaded!')
+  cli::cli_alert_success(msg)
+}
+```
+
+
+```{r}
+sys_time <- Sys.time()
+cro_save_env(id = sys_time)
+cro_load_env(id = sys_time)
+```

@@ -1,0 +1,663 @@
+---
+title: "cronoscanr"
+format: html
+editor: visual
+---
+
+```{r, echo=FALSE}
+api_key <- "3SN1BFFHHYUNB8WT11N3IW3NN43U1PBU8D"
+source("../R/rescale_decimals.R")
+source("../R/Api.R")
+sample_account <- "0xD1bB5AB0613D9Dd4F659223E52d7A695Df4ec1B0"
+sample_tx <- "0x99c7549fc1fb8d929b53383b0ee3709c9fe0d79ec60d71a0d4f2b1ce4805f118"
+burn_account <- "0x000000000000000000000000000000000000dEaD"
+wcro <- "0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23"
+```
+
+```{r}
+cro_env <- new.env(parent = .GlobalEnv)
+cro_env$api_key <- NULL
+cro_env$base_url <- "https://api.cronoscan.com"
+cro_env$crc <- list()
+```
+
+# Endpoints
+
+-   <a href="#cronoscan-accounts">Accounts</a>
+-   <a href="#cronoscan-transactions">Transactions</a>
+-   <a href="#cronoscan-proxy">Proxy</a>
+-   <a href="#cronoscan-stats">Stats</a>
+
+# Cronoscaner env 
+
+## Api Key
+
+```{r}
+cro_api_key <- function(api_key = NULL){
+  
+  if (!is.null(api_key)) {
+    cro_env$api_key <- api_key
+    cli::cli_alert_success("Cronos Api Key added!")
+  } else {
+    return(cro_env$api_key)
+  }
+}
+```
+
+## Token tags
+
+```{r}
+cro_add_token <- function(address = NULL, id = NULL){
+  
+  id <- tolower(id)
+  all_id <- tolower(names(cro_env$crc))
+  check_id <- !(id %in% all_id)
+  
+  if (check_id) {
+    cro_env$crc[[id]] <- address
+    msg <- paste0('Token with id "', id, '" added!')
+    cli::cli_alert_success(msg)
+  } else {
+    wrn <- paste0('A token with id "', id, '" already exists!')
+    cli::cli_alert_danger(wrn)
+  }
+}
+
+cro_rm_token <- function(id = NULL){
+  
+  id <- tolower(id)
+  all_id <- tolower(names(cro_env$crc))
+  check_id <- id %in% all_id
+  
+  if (check_id) {
+    cro_env$crc[[id]] <- NULL
+    msg <- paste0('Token with id "', id, '" removed!')
+    cli::cli_alert_success(msg)
+  } else {
+    wrn <- paste0('A token with id "', id, '" not exists!')
+    cli::cli_alert_danger(wrn)
+  }
+}
+
+cro_token <- function(id = NULL){
+  
+  id <- tolower(id)
+  all_id <- tolower(names(cro_env$crc))
+  check_id <- all_id %in% tolower(id)
+  
+  if (!purrr::is_empty(check_id)) {
+    return(cro_env$crc[[id]])
+  } else {
+    wrn <- paste0('A token with id "', id, '" not exists!')
+    cli::cli_alert_warning(wrn)
+    return(NULL)
+  }
+}
+```
+
+## Save and load enviroments
+
+```{r}
+cro_save_env <- function(path = getwd(), id = ""){
+  id <- as.character(id)
+  file_name <- paste0("cro_env", ifelse(id == "", "", "_"), id, ".RData")
+  file_path <- paste0(path, "/", file_name)
+  save(cro_env, file = file_path)
+  msg <- paste0('cro env with id "', id, '" saved in ', file_path, '!')
+  cli::cli_alert_success(msg)
+}
+
+cro_load_env <- function(path = getwd(), id = "", envir = .GlobalEnv){
+  id <- as.character(id)
+  file_name <- paste0("cro_env", ifelse(id == "", "", "_"), id, ".RData")
+  file_path <- paste0(path, "/", file_name)
+  load(file_path, envir = envir)
+  msg <- paste0('cro env with id "', id, '" loaded!')
+  cli::cli_alert_success(msg)
+}
+
+# sys_time <- Sys.time()
+# cro_save_env(id = sys_time)
+# cro_load_env(id = "sys_time)
+```
+
+
+## Example
+
+```{r}
+cro_api_key(api_key)
+cro_token("wcro")
+cro_add_token("0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23", id = "wcro")
+cro_token("wcro")
+cro_add_token("0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23", id = "wcro")
+cro_rm_token(id = "wcro")
+cro_token("wcro")
+cro_add_token("0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23", id = "wcro")
+cro_token("wcro")
+```
+
+# Accounts {#cronoscan-accounts}
+
+Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/accounts">Accounts</a> of cronoscan api.
+
+## Get CRO Balance for a Single Address or Multiple Addresses in a Single Call
+
+Returns the CRO balance of a given address or returns the balance of the accounts from a list of addresses if the number of addresses is less or equal than 20.
+
+```{r}
+cro_account_cro_balance <- function(account, api_key = cro_api_key()){
+  
+  if (missing(account) || is.null(account)){
+    msg <- paste0("The account argument is NULL")
+    cli::cli_alert_danger(msg)
+    return(NULL)
+  }
+  
+  # initialize query 
+  query <- list(module = "account", 
+                action = "balance", 
+                address = account, 
+                tag = "latest", 
+                apikey = api_key)
+  
+  n <- length(account)
+  if (n > 1 & n <= 20) { 
+    query$action <- "balancemulti"
+    query$address <- paste0(account, collapse = ",")
+  } else if (n > 20) { 
+    msg <- "The maximum number of accounts for a single call is 20."
+    cli::cli_abort(msg)
+  }
+  
+  response <- Api(url = cro_env$base_url, path = "api", query = query)
+  
+  # initialize output dataset 
+  output <- dplyr::tibble(date = Sys.time(), 
+                          account = account, 
+                          balance = rep(NA_integer_, n))
+  # rescale decimals 
+  if (!is.null(response) & n > 1) {
+    output$balance <- purrr::map_dbl(response$result$balance, ~rescale_decimals(.x, 18))
+  } else if (!is.null(response) & n == 1) {
+    output$balance <- purrr::map_dbl(response$result, ~rescale_decimals(.x, 18))
+  } 
+  return(output)
+}
+```
+
+### Example
+
+```{r}
+cro_account_cro_balance(c(sample_account))
+```
+
+## Get a list of Transactions By Address
+
+Returns the list of transactions performed by an address, with optional pagination.
+
+```{r}
+cro_account_tx <- 
+  function(account = NULL, internal = FALSE, start_block = 1, end_block = 99999999, txhash = NULL, api_key = cro_api_key()){
+    
+  # initialize query 
+  query <- list(module = "account", 
+                action = "", 
+                address = account, 
+                startblock = start_block, 
+                endblock = end_block, 
+                txhash = txhash,
+                sort = "desc", 
+                apikey = api_key)
+  # internal transactions 
+  if (internal) {
+    query$action <- "txlistinternal" 
+  } else {
+    query$action <- "txlist" 
+  }
+  # tx hash 
+  if (!is.null(query$txhash)) {
+    internal <- TRUE
+    query$action <- "txlistinternal"
+    query$starblock <- NULL
+    query$endblock <- NULL
+    query$txhash <- txhash
+  }
+  
+  response <- Api(url = cro_env$base_url, path = "api", query = query)
+  output <- dplyr::as_tibble(response$result)
+  output <- dplyr::mutate(output, 
+                          timeStamp = as.numeric(timeStamp),
+                          timeStamp = as.POSIXct(timeStamp, origin = "1970-01-01"),
+                          value = rescale_decimals(value, 18))
+  
+  if (!internal & is.null(txhash)) {
+    output <- dplyr::mutate(output, 
+                            txs_fee = as.numeric(gasPrice)*as.numeric(gasUsed),
+                            txs_fee = rescale_decimals(txs_fee, 18))
+  } else if (internal & !is.null(txhash)) {
+    output <- dplyr::mutate(output, 
+                            gasUsed = as.numeric(gasUsed))
+  }
+  return(output)
+}
+```
+
+### Get a list of Normal Transactions By Address
+
+```{r}
+cro_account_tx(account = sample_account, internal = FALSE, start_block = 1, end_block = 99999999)
+```
+
+### Get a list of Internal Transactions By Address
+
+```{r}
+cro_account_tx(account = sample_account, internal = TRUE, start_block = 1, end_block = 99999999)
+```
+
+### Get a list of Internal Transactions by Transaction Hash
+
+```{r}
+cro_account_tx(account = NULL, internal = TRUE, txhash = "0x76963821ab8f310a1ba42e6c1ebb36fb9a8442f87a8c298e81136a15355c2ac6", start_block = 100000, end_block = 100010)
+```
+
+### Get a list of Internal Transactions by Block Range
+
+```{r}
+cro_account_tx(account = NULL, internal = TRUE, start_block = 100000, end_block = 100010)
+```
+
+
+## Get a list of CRC-20 or CRC-721 Token Transfer Events by Address
+
+```{r}
+cro_account_crc_tx <- 
+  function(account, contract = NULL, nft = FALSE, start_block = 1, end_block = 99999999, api_key = cro_api_key()){
+  
+  query <- list(module = "account", 
+                action = ifelse(nft, "tokennfttx", "tokentx"), 
+                contractaddress = contract,
+                address = account, 
+                startblock = start_block, 
+                endblock = end_block, 
+                sort = "desc", 
+                apikey = api_key)
+  
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  
+  output <- dplyr::as_tibble(out$result)
+  if (!nft) {
+    output <- dplyr::mutate(output, 
+                            timeStamp = as.numeric(timeStamp),
+                            timeStamp = as.POSIXct(timeStamp, origin = "1970-01-01"),
+                            value = rescale_decimals(value, tokenDecimal))
+  }  else {
+    output <- dplyr::mutate(output, 
+                            timeStamp = as.numeric(timeStamp),
+                            timeStamp = as.POSIXct(timeStamp, origin = "1970-01-01"),
+                            txs_fee = as.numeric(gasPrice)*as.numeric(gasUsed),
+                            txs_fee = rescale_decimals(txs_fee, 18))
+  }
+  return(output)
+}
+```
+
+### Example
+
+```{r}
+cro_account_crc_tx(sample_account, contract = wcro, nft = FALSE)
+```
+
+## Get list of Blocks Validated by Address
+
+Returns the list of blocks validated by an address.
+
+```{r}
+cro_address_validated_blocks <- function(address = NULL, api_key = cro_api_key()){
+  query <- list(module = "account", 
+                action = "getminedblocks", 
+                address = address, 
+                blocktype = "blocks", 
+                apikey = api_key)
+  
+  response <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  output <- dplyr::as_tibble(response$result)
+  
+  if (!is.null(response)) {
+   output <- dplyr::mutate(output, 
+                          timeStamp = as.numeric(timeStamp),
+                          timeStamp = as.POSIXct(timeStamp, origin = "1970-01-01"),
+                          blockReward = rescale_decimals(blockReward, 18)) 
+  }
+  return(output)
+}
+```
+
+
+### Example
+
+```{r}
+cro_address_validated_blocks(address = "0xca5cf03d081197be24ef707081fbd7f3f11eb02d")
+```
+
+```{r, echo=FALSE}
+Sys.sleep(3)
+```
+
+
+# Transactions {#cronoscan-transactions}
+
+Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/stats">transactions</a> of cronoscan api.
+
+## Check Contract Execution Status
+
+Returns the status code of a contract execution.
+
+```{r}
+cro_tx_status <- function(txhash = NULL, api_key = cro_api_key()){
+  query <- list(module = "transaction", 
+                action = "getstatus", 
+                txhash = txhash, 
+                apikey = api_key)
+  
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  
+  output <- dplyr::tibble(date = Sys.time(), 
+                          txhash = txhash, 
+                          status = out$status, 
+                          message = out$message, 
+                          isError = out$result$isError, 
+    description = out$result$errDescription)
+  return(output)
+}
+```
+
+### Example
+
+```{r}
+cro_tx_status(txhash = "0x99c7549fc1fb8d929b53383b0ee3709c9fe0d79ec60d71a0d4f2b1ce4805f118")
+```
+
+## Check Transaction Receipt Status
+
+Returns the status code of a transaction execution.
+
+```{r}
+cro_tx_receipt_status <- function(txhash = NULL, api_key = cro_api_key()){
+  query <- list(module = "transaction", 
+                action = "gettxreceiptstatus", 
+                txhash = txhash, 
+                apikey = api_key)
+  
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  output <- dplyr::tibble(date = Sys.time(), 
+                          txhash = txhash, 
+                          status = out$status, 
+                          message = out$message)
+  return(output)
+}
+```
+
+### Example
+
+```{r}
+cro_tx_receipt_status(txhash = "0x99c7549fc1fb8d929b53383b0ee3709c9fe0d79ec60d71a0d4f2b1ce4805f118")
+```
+
+```{r, echo=FALSE}
+Sys.sleep(3)
+```
+
+# Blocks {#cronoscan-blocks}
+
+Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/blocks">Blocks</a> of cronoscan api.
+
+## Get Block Rewards by BlockNo
+
+```{r}
+cro_block_reward <- function(block = 1, api_key = cro_api_key()){
+
+  query <- list(module = "block", action = 'getblockreward', blockno = block, apikey = api_key)
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  output <- dplyr::bind_cols(out$result)
+  output <- dplyr::mutate(output, 
+                          blockReward = rescale_decimals(blockReward, 18),
+                          timeStamp = as.numeric(timeStamp),
+                          timeStamp = as.POSIXct(timeStamp, origin = "1970-01-01"))
+  return(output)
+}
+```
+
+### Example 
+
+```{r}
+cro_block_reward(130234)
+```
+
+
+
+## Get Estimated Block Countdown Time by BlockNo
+
+## Get Block Number by Timestamp
+
+```{r}
+cro_block_number <- function(date = Sys.time(), api_key = cro_api_key()){
+  
+  if (!is.numeric(date)) {
+    date <- format(as.numeric(as.POSIXct(date)))
+  }
+  query <- list(module = "block", 
+                action = 'getblocknobytime', 
+                timestamp = date, 
+                closest = "before", 
+                apikey = api_key)
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  output <- dplyr::tibble(timeStamp = as.POSIXct(as.numeric(date), origin = "1970-01-01"), 
+                          blockNumber = as.numeric(out$result))
+  return(output)
+}
+```
+
+### Example 
+
+```{r}
+cro_block_number(date = "2022-01-01 10:45:00")
+```
+
+```{r, echo=FALSE}
+Sys.sleep(3)
+```
+
+# Proxy {#cronoscan-proxy}
+
+Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/geth-parity-proxy">Proxy</a> of cronoscan api.
+
+## eth_blockNumber
+
+Returns the number of most recent block
+
+```{r}
+cro_last_block <- function(api_key = cro_api_key()){
+  query <- list(module = "proxy", 
+                action = 'eth_blockNumber', 
+                apikey = api_key)
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  output <- as.integer(as.hexmode(out$result))
+  return(output)
+}
+```
+
+### Example
+
+```{r}
+cro_last_block()
+```
+
+## eth_getTransactionCount
+
+```{r}
+cro_account_tx_count <- function(address = NULL, api_key = cro_api_key()){
+  query <- list(module = "proxy", 
+                action = 'eth_getTransactionCount', 
+                address = address, tag = "latest", 
+                apikey = api_key)
+  
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  
+  if (!is.null(out)) {
+    txcount <- as.integer(as.hexmode(out$result))
+  } else {
+    txcount <- NA_integer_
+  }
+  return(txcount)
+}
+```
+
+### Example
+
+```{r}
+cro_account_tx_count(address = sample_account)
+```
+
+## eth_gasPrice (in progress)
+
+Returns the current price per gas in wei.
+
+```{r, eval=FALSE}
+cro_gas_price <- function(api_key = cro_api_key()){
+  
+  query <- list(module = "proxy", 
+                action = 'eth_gasPrice', 
+                apikey = api_key)
+  
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  return(out)
+  if (!is.null(out)) {
+    txcount <- as.integer(as.hexmode(out$result))
+  } else {
+    txcount <- NA_integer_
+  }
+  return(txcount)
+}
+```
+
+```{r, echo=FALSE}
+Sys.sleep(3)
+```
+
+# Tokens {#cronoscan-tokens}
+
+Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/tokens">Tokens</a> of cronoscan api.
+
+## Get CRC-20 Token Supply
+
+```{r}
+cro_crc_supply <- function(contract, decimals = 18, api_key = cro_api_key()){
+
+  query <- list(module = "stats", 
+                action = 'tokensupply', 
+                contractaddress = contract, 
+                apikey = api_key)
+  
+  out <- Api(url = cro_env$base_url, path = c("api"), query = query)$result
+  
+  output <- dplyr::tibble(date = Sys.time(), 
+                          contract = contract, 
+                          supply = rescale_decimals(out, decimals = decimals))
+  return(output)
+}
+```
+
+### Example 
+
+```{r}
+cro_crc_supply(contract = wcro)
+```
+
+
+
+## Get CRC-20 Token Account Balance by ContractAddress
+
+```{r}
+# Get CRC20-Token Account Balance for TokenContractAddress
+cro_account_crc_balance <- 
+  function(account = NULL, contract = NULL, decimals = 18, api_key = cro_api_key()){
+  
+  query <- list(module = "account", 
+                action = 'tokenbalance', 
+                contractaddress = contract, 
+                address = account, 
+                tag = "latest", 
+                apikey = api_key)
+  
+  response <- Api(url = cro_env$base_url, path = c("api"), query = query)
+  
+  output <- dplyr::tibble(date = Sys.time(), 
+                          address = account, 
+                          contract = contract, 
+                          balance = rescale_decimals(response$result, decimals = decimals))
+  return(output)
+}
+```
+
+### Example 
+
+```{r}
+cro_account_crc_balance(account = "0xbf62c67eA509E86F07c8c69d0286C0636C50270b", # LP VVS-CRO 
+                        contract = wcro)
+```
+
+```{r, echo=FALSE}
+Sys.sleep(3)
+```
+
+# Stats {#cronoscan-stats}
+
+Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/stats-1">Stats</a> of cronoscan api.
+
+## Get Total Supply of CRO on the Cronos Chain Chain
+
+```{r}
+cro_supply <- function(api_key = cro_api_key()){
+  query <- list(module = "stats", 
+                action = "supply", 
+                apikey = api_key)
+  
+  out <- Api(url = cro_env$base_url, path = "api", query = query)
+  
+  output <- dplyr::tibble(date = Sys.time(), 
+                          supply = rescale_decimals(out$result, 18))
+  return(output)
+}
+```
+
+### Example
+
+```{r}
+cro_supply()
+```
+
+## Get CRO Last Price 
+
+```{r}
+cro_price <- function(api_key = cro_api_key(), btc = FALSE){
+
+  out <- Api(url = cro_env$base_url, path = c("api"), query = list(module = "stats", action = "ethprice", apikey = api_key))
+  if (btc){
+    out$result$ethbtc_timestamp <- as.numeric(out$result$ethbtc_timestamp)
+    out$result$ethbtc <- as.numeric(out$result$ethbtc)
+    output <- dplyr::tibble(date = as.POSIXct(out$result$ethbtc_timestamp, origin = "1970-01-01"), pair = "CROBTC", last = out$result$ethbtc)
+  } else {
+    out$result$ethusd_timestamp <- as.numeric(out$result$ethusd_timestamp)
+    out$result$ethusd <- as.numeric(out$result$ethusd)
+    output <- dplyr::tibble(date = as.POSIXct(out$result$ethusd_timestamp, origin = "1970-01-01"), pair = "CROUSD", last = out$result$ethusd)
+  }
+  return(output)
+}
+```
+
+### Example
+
+```{r}
+cro_price(btc = FALSE)
+cro_price(btc = TRUE)
+```

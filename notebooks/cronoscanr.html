@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>cronoscanr</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="cronoscanr_files/libs/clipboard/clipboard.min.js"></script>
+<script src="cronoscanr_files/libs/quarto-html/quarto.js"></script>
+<script src="cronoscanr_files/libs/quarto-html/popper.min.js"></script>
+<script src="cronoscanr_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="cronoscanr_files/libs/quarto-html/anchor.min.js"></script>
+<link href="cronoscanr_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="cronoscanr_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="cronoscanr_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="cronoscanr_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="cronoscanr_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">cronoscanr</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>cro_env <span class="ot">&lt;-</span> <span class="fu">new.env</span>(<span class="at">parent =</span> .GlobalEnv)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>cro_env<span class="sc">$</span>api_key <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>cro_env<span class="sc">$</span>base_url <span class="ot">&lt;-</span> <span class="st">"https://api.cronoscan.com"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="endpoints" class="level1">
+<h1>Endpoints</h1>
+<ul>
+<li><a href="#cronoscan-accounts">Accounts</a></li>
+<li><a href="#cronoscan-transactions">Transactions</a></li>
+<li><a href="#cronoscan-proxy">Proxy</a></li>
+<li><a href="#cronoscan-stats">Stats</a></li>
+</ul>
+</section>
+<section id="api-key" class="level1">
+<h1>Api Key</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>cro_api_key <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">api_key =</span> <span class="cn">NULL</span>){</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(api_key)){</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    cro_env<span class="sc">$</span>api_key <span class="ot">&lt;-</span> api_key</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Cronos Api Key added!"</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(cro_env<span class="sc">$</span>api_key)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example" class="level2">
+<h2 class="anchored" data-anchor-id="example">Example</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_api_key</span>(api_key)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Cronos Api Key added!</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="cronoscan-accounts" class="level1">
+<h1>Accounts</h1>
+<p>Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/accounts">Accounts</a> of cronoscan api.</p>
+<section id="get-cro-balance-for-a-single-address-or-multiple-addresses-in-a-single-call" class="level2">
+<h2 class="anchored" data-anchor-id="get-cro-balance-for-a-single-address-or-multiple-addresses-in-a-single-call">Get CRO Balance for a Single Address or Multiple Addresses in a Single Call</h2>
+<p>Returns the CRO balance of a given address or returns the balance of the accounts from a list of addresses if the number of addresses is less or equal than 20.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>cro_account_cro_balance <span class="ot">&lt;-</span> <span class="cf">function</span>(account, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># initialize query </span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"account"</span>, <span class="at">action =</span> <span class="st">""</span>, <span class="at">address =</span> <span class="st">""</span>, <span class="at">tag =</span> <span class="st">"latest"</span>, <span class="at">apikey =</span> api_key)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(account) <span class="sc">==</span> <span class="dv">1</span>) {</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>action <span class="ot">&lt;-</span> <span class="st">"balance"</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>address <span class="ot">&lt;-</span> account</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">length</span>(account) <span class="sc">&lt;=</span> <span class="dv">20</span>) { </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>action <span class="ot">&lt;-</span> <span class="st">"balancemulti"</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>address <span class="ot">&lt;-</span> <span class="fu">paste0</span>(account, <span class="at">collapse =</span> <span class="st">","</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">length</span>(account) <span class="sc">&gt;</span> <span class="dv">20</span>) { </span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="st">"The maximum number of accounts for each call is 20."</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Api response  </span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  response <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Output dataset </span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">Sys.time</span>(), <span class="at">account =</span> account, <span class="at">balance =</span> <span class="fu">rep</span>(<span class="cn">NA_integer_</span>, <span class="fu">length</span>(account)))</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(response) <span class="sc">&amp;</span> <span class="fu">length</span>(account) <span class="sc">&gt;</span> <span class="dv">1</span>) {</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    output<span class="sc">$</span>balance <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(response<span class="sc">$</span>result<span class="sc">$</span>balance, <span class="sc">~</span><span class="fu">rescale_decimals</span>(.x, <span class="dv">18</span>))</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(response) <span class="sc">&amp;</span> <span class="fu">length</span>(account) <span class="sc">==</span> <span class="dv">1</span>) {</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    output<span class="sc">$</span>balance <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(response<span class="sc">$</span>result, <span class="sc">~</span><span class="fu">rescale_decimals</span>(.x, <span class="dv">18</span>))</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  } </span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-1" class="level3">
+<h3 class="anchored" data-anchor-id="example-1">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_cro_balance</span>(<span class="fu">c</span>(sample_account))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  date                account                                    balance
+  &lt;dttm&gt;              &lt;chr&gt;                                        &lt;dbl&gt;
+1 2023-10-21 17:31:02 0xD1bB5AB0613D9Dd4F659223E52d7A695Df4ec1B0    155.</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="get-a-list-of-transactions-by-address" class="level2">
+<h2 class="anchored" data-anchor-id="get-a-list-of-transactions-by-address">Get a list of Transactions By Address</h2>
+<p>Returns the list of transactions performed by an address, with optional pagination.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>cro_account_tx <span class="ot">&lt;-</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(<span class="at">account =</span> <span class="cn">NULL</span>, <span class="at">internal =</span> <span class="cn">FALSE</span>, <span class="at">start_block =</span> <span class="dv">1</span>, <span class="at">end_block =</span> <span class="dv">99999999</span>, <span class="at">txhash =</span> <span class="cn">NULL</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"account"</span>, </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">action =</span> <span class="st">""</span>, </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">address =</span> account, </span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                <span class="at">startblock =</span> start_block, </span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">endblock =</span> end_block, </span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">txhash =</span> txhash,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                <span class="at">sort =</span> <span class="st">"desc"</span>, </span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                <span class="at">apikey =</span> api_key)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (internal){</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>action <span class="ot">&lt;-</span> <span class="st">"txlistinternal"</span> </span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>action <span class="ot">&lt;-</span> <span class="st">"txlist"</span> </span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(query<span class="sc">$</span>txhash)){</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>action <span class="ot">&lt;-</span> <span class="st">"txlistinternal"</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>starblock <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>endblock <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    query<span class="sc">$</span>txhash <span class="ot">&lt;-</span> txhash</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  response <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">as_tibble</span>(response<span class="sc">$</span>result)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">mutate</span>(output, <span class="at">value =</span> <span class="fu">rescale_decimals</span>(value, <span class="dv">18</span>))</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>internal) {</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">mutate</span>(output, </span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>                            <span class="at">txs_fee =</span> <span class="fu">as.numeric</span>(gasPrice)<span class="sc">*</span><span class="fu">as.numeric</span>(gasUsed),</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>                            <span class="at">txs_fee =</span> <span class="fu">rescale_decimals</span>(txs_fee, <span class="dv">18</span>))</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="get-a-list-of-normal-transactions-by-address" class="level3">
+<h3 class="anchored" data-anchor-id="get-a-list-of-normal-transactions-by-address">Get a list of Normal Transactions By Address</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_tx</span>(<span class="at">account =</span> sample_account, <span class="at">internal =</span> <span class="cn">FALSE</span>, <span class="at">start_block =</span> <span class="dv">1</span>, <span class="at">end_block =</span> <span class="dv">99999999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 968 × 21
+   blockNumber timeStamp  hash      nonce blockHash transactionIndex from  to   
+   &lt;chr&gt;       &lt;chr&gt;      &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;     &lt;chr&gt;            &lt;chr&gt; &lt;chr&gt;
+ 1 10687093    1697413836 0xde2ae9… 959   0xe899f0… 0                0xd1… 0x47…
+ 2 10687089    1697413814 0x4566e5… 958   0x409ad0… 0                0xd1… 0xeb…
+ 3 10656676    1697242336 0xfc183e… 957   0xecfd00… 0                0xd1… 0xd1…
+ 4 10472900    1696204602 0x769638… 956   0xbdbd5e… 0                0xd1… 0x13…
+ 5 10106145    1694137696 0x80a507… 955   0x0bb73a… 3                0xd1… 0x6b…
+ 6 10105950    1694136600 0xd4de2a… 3190… 0xf4d657… 1                0xc9… 0xd1…
+ 7 9661442     1691631199 0x007fce… 954   0x79763f… 0                0xd1… 0x13…
+ 8 9154680     1688775992 0xc0394a… 953   0xb71975… 3                0xd1… 0xc2…
+ 9 9154678     1688775980 0xc35e89… 952   0xb0c953… 1                0xd1… 0xc2…
+10 9154673     1688775952 0x2bee92… 951   0x407488… 3                0xd1… 0x66…
+# ℹ 958 more rows
+# ℹ 13 more variables: value &lt;dbl&gt;, gas &lt;chr&gt;, gasPrice &lt;chr&gt;, isError &lt;chr&gt;,
+#   txreceipt_status &lt;chr&gt;, input &lt;chr&gt;, contractAddress &lt;chr&gt;,
+#   cumulativeGasUsed &lt;chr&gt;, gasUsed &lt;chr&gt;, confirmations &lt;chr&gt;,
+#   methodId &lt;chr&gt;, functionName &lt;chr&gt;, txs_fee &lt;dbl&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="get-a-list-of-internal-transactions-by-address" class="level3">
+<h3 class="anchored" data-anchor-id="get-a-list-of-internal-transactions-by-address">Get a list of Internal Transactions By Address</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_tx</span>(<span class="at">account =</span> sample_account, <span class="at">internal =</span> <span class="cn">TRUE</span>, <span class="at">start_block =</span> <span class="dv">1</span>, <span class="at">end_block =</span> <span class="dv">99999999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 103 × 14
+   blockNumber timeStamp  hash   from  to      value contractAddress input type 
+   &lt;chr&gt;       &lt;chr&gt;      &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt;           &lt;chr&gt; &lt;chr&gt;
+ 1 10472900    1696204602 0x769… 0x13… 0xd1… 7.41e+0 ""              ""    call 
+ 2 9661442     1691631199 0x007… 0x13… 0xd1… 7.06e+0 ""              ""    call 
+ 3 8940811     1687573518 0x7c8… 0x13… 0xd1… 4.83e+0 ""              ""    call 
+ 4 8450282     1684798070 0x590… 0x13… 0xd1… 2.65e+0 ""              ""    call 
+ 5 8191335     1683331834 0x895… 0x14… 0xd1… 1.09e-1 ""              ""    call 
+ 6 8024180     1682386624 0x3fa… 0x77… 0xd1… 8.96e-2 ""              ""    call 
+ 7 8008086     1682295659 0x436… 0x14… 0xd1… 6.79e-1 ""              ""    call 
+ 8 8008040     1682295399 0x92f… 0x14… 0xd1… 7.99e-1 ""              ""    call 
+ 9 7489105     1679363726 0xbc4… 0x14… 0xd1… 6.12e+2 ""              ""    call 
+10 6030774     1671117355 0x1b4… 0x89… 0xd1… 7.52e-3 ""              ""    call 
+# ℹ 93 more rows
+# ℹ 5 more variables: gas &lt;chr&gt;, gasUsed &lt;chr&gt;, traceId &lt;chr&gt;, isError &lt;chr&gt;,
+#   errCode &lt;chr&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="get-a-list-of-internal-transactions-by-transaction-hash" class="level3">
+<h3 class="anchored" data-anchor-id="get-a-list-of-internal-transactions-by-transaction-hash">Get a list of Internal Transactions by Transaction Hash</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_tx</span>(<span class="at">account =</span> <span class="cn">NULL</span>, <span class="at">internal =</span> <span class="cn">TRUE</span>, <span class="at">txhash =</span> <span class="st">"0x76963821ab8f310a1ba42e6c1ebb36fb9a8442f87a8c298e81136a15355c2ac6"</span>, <span class="at">start_block =</span> <span class="dv">100000</span>, <span class="at">end_block =</span> <span class="dv">100010</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 12
+  blockNumber timeStamp  from      to    value contractAddress input type  gas  
+  &lt;chr&gt;       &lt;chr&gt;      &lt;chr&gt;     &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;           &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;
+1 10472900    1696204602 0x5c7f8a… 0x13…  7.41 ""              ""    call  2300 
+2 10472900    1696204602 0x133b7f… 0xd1…  7.41 ""              ""    call  1899…
+# ℹ 3 more variables: gasUsed &lt;chr&gt;, isError &lt;chr&gt;, errCode &lt;chr&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="get-a-list-of-internal-transactions-by-block-range" class="level3">
+<h3 class="anchored" data-anchor-id="get-a-list-of-internal-transactions-by-block-range">Get a list of Internal Transactions by Block Range</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_tx</span>(<span class="at">account =</span> <span class="cn">NULL</span>, <span class="at">internal =</span> <span class="cn">TRUE</span>, <span class="at">start_block =</span> <span class="dv">100000</span>, <span class="at">end_block =</span> <span class="dv">100010</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 76 × 14
+   blockNumber timeStamp  hash   from  to      value contractAddress input type 
+   &lt;chr&gt;       &lt;chr&gt;      &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt;           &lt;chr&gt; &lt;chr&gt;
+ 1 100010      1636891539 0x894… 0xcd… 0x5c… 1.11e+2 ""              ""    call 
+ 2 100010      1636891539 0x5a8… 0xcd… 0x87… 1.06e-2 ""              ""    call 
+ 3 100010      1636891539 0x5a8… 0xcd… 0x5c… 2.20e+1 ""              ""    call 
+ 4 100010      1636891539 0xfc1… 0x14… 0x5c… 2.5 e+1 ""              ""    call 
+ 5 100010      1636891539 0x904… 0xcd… 0x5c… 1   e+0 ""              ""    call 
+ 6 100010      1636891539 0x375… 0x14… 0x34… 1.94e-2 ""              ""    call 
+ 7 100010      1636891539 0x375… 0x14… 0x5c… 2.21e+3 ""              ""    call 
+ 8 100010      1636891539 0xa5c… 0x14… 0x5c… 4.09e+3 ""              ""    call 
+ 9 100009      1636891534 0xd17… 0x14… 0x91… 5.44e-1 ""              ""    call 
+10 100009      1636891534 0x266… 0x5c… 0xcd… 1.08e+1 ""              ""    call 
+# ℹ 66 more rows
+# ℹ 5 more variables: gas &lt;chr&gt;, gasUsed &lt;chr&gt;, traceId &lt;chr&gt;, isError &lt;chr&gt;,
+#   errCode &lt;chr&gt;</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="get-a-list-of-crc-20-or-crc-721-token-transfer-events-by-address" class="level2">
+<h2 class="anchored" data-anchor-id="get-a-list-of-crc-20-or-crc-721-token-transfer-events-by-address">Get a list of CRC-20 or CRC-721 Token Transfer Events by Address</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>cro_account_crc_tx <span class="ot">&lt;-</span> </span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(account, <span class="at">contract =</span> <span class="cn">NULL</span>,  <span class="at">nft =</span> <span class="cn">FALSE</span>, <span class="at">start_block =</span> <span class="dv">1</span>, <span class="at">end_block =</span> <span class="dv">99999999</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"account"</span>, </span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">action =</span> <span class="fu">ifelse</span>(nft, <span class="st">"tokennfttx"</span>, <span class="st">"tokentx"</span>), </span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">contractaddress =</span> contract,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                <span class="at">address =</span> account, </span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">startblock =</span> start_block, </span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">endblock =</span> end_block, </span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                <span class="at">sort =</span> <span class="st">"desc"</span>, </span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>                <span class="at">apikey =</span> api_key)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">as_tibble</span>(out<span class="sc">$</span>result)</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>nft) {</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">mutate</span>(output, <span class="at">value =</span> <span class="fu">rescale_decimals</span>(value, tokenDecimal))</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  }  </span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">mutate</span>(output, </span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>                          <span class="at">txs_fee =</span> <span class="fu">as.numeric</span>(gasPrice)<span class="sc">*</span><span class="fu">as.numeric</span>(gasUsed),</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>                          <span class="at">txs_fee =</span> <span class="fu">rescale_decimals</span>(txs_fee, <span class="dv">18</span>))</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-2" class="level3">
+<h3 class="anchored" data-anchor-id="example-2">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_crc_tx</span>(sample_account, <span class="at">contract =</span> wcro, <span class="at">nft =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 30 × 19
+   blockNumber timeStamp hash  nonce blockHash from  contractAddress to    value
+   &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;           &lt;chr&gt; &lt;chr&gt;
+ 1 4241568     16609628… 0xf0… 893   0x7b45d8… 0xa9… 0x5c7f8a570d57… 0xd1… 2940…
+ 2 4065391     16599637… 0x96… 876   0x032a5b… 0x69… 0x5c7f8a570d57… 0xd1… 5566…
+ 3 3647052     16575842… 0x0b… 831   0x8b6657… 0x30… 0x5c7f8a570d57… 0xd1… 2532…
+ 4 3634059     16575102… 0x2e… 823   0x40c12a… 0xd1… 0x5c7f8a570d57… 0xd0… 1138…
+ 5 3634007     16575099… 0x61… 820   0x7c4cdb… 0x69… 0x5c7f8a570d57… 0xd1… 1132…
+ 6 3486582     16566702… 0x9c… 816   0x8a9619… 0xc7… 0x5c7f8a570d57… 0xd1… 5867…
+ 7 3091578     16544215… 0x39… 805   0x607425… 0xc7… 0x5c7f8a570d57… 0xd1… 2647…
+ 8 3018569     16540059… 0xbc… 784   0x5c0adf… 0xc7… 0x5c7f8a570d57… 0xd1… 2489…
+ 9 2903634     16533449… 0x79… 747   0x02dcb3… 0x69… 0x5c7f8a570d57… 0xd1… 1049…
+10 2895977     16533008… 0xab… 746   0x0408d2… 0x40… 0x5c7f8a570d57… 0xd1… 1581…
+# ℹ 20 more rows
+# ℹ 10 more variables: tokenName &lt;chr&gt;, tokenSymbol &lt;chr&gt;, tokenDecimal &lt;chr&gt;,
+#   transactionIndex &lt;chr&gt;, gas &lt;chr&gt;, gasPrice &lt;chr&gt;, gasUsed &lt;chr&gt;,
+#   cumulativeGasUsed &lt;chr&gt;, input &lt;chr&gt;, confirmations &lt;chr&gt;</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="get-list-of-blocks-validated-by-address" class="level2">
+<h2 class="anchored" data-anchor-id="get-list-of-blocks-validated-by-address">Get list of Blocks Validated by Address</h2>
+<p>Returns the list of blocks validated by an address.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>cro_address_validated_blocks <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">address =</span> <span class="cn">NULL</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"account"</span>, <span class="at">action =</span> <span class="st">"getminedblocks"</span>, <span class="at">address =</span> address, <span class="at">blocktype =</span> <span class="st">"blocks"</span>, <span class="at">apikey =</span> api_key)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  response <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">as_tibble</span>(response<span class="sc">$</span>result)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(response)){</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>   output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">mutate</span>(output, </span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">timeStamp =</span> <span class="fu">as.numeric</span>(timeStamp),</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">timeStamp =</span> <span class="fu">as.POSIXct</span>(timeStamp, <span class="at">origin =</span> <span class="st">"1970-01-01"</span>),</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">blockReward =</span> <span class="fu">rescale_decimals</span>(blockReward, <span class="dv">18</span>)) </span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-3" class="level3">
+<h3 class="anchored" data-anchor-id="example-3">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_address_validated_blocks</span>(<span class="at">address =</span> <span class="st">"0xca5cf03d081197be24ef707081fbd7f3f11eb02d"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10,000 × 3
+   blockNumber timeStamp             blockReward
+   &lt;chr&gt;       &lt;dttm&gt;                      &lt;dbl&gt;
+ 1 10773792    2023-10-21 17:30:24  0.220       
+ 2 10773786    2023-10-21 17:29:49  0.0425      
+ 3 10773781    2023-10-21 17:29:21  0.000139    
+ 4 10773776    2023-10-21 17:28:53  0.0136      
+ 5 10773771    2023-10-21 17:28:24  0.000000134 
+ 6 10773765    2023-10-21 17:27:50  0.0000000593
+ 7 10773761    2023-10-21 17:27:28  0.00338     
+ 8 10773755    2023-10-21 17:26:54  0.0891      
+ 9 10773750    2023-10-21 17:26:25 24.9         
+10 10773745    2023-10-21 17:25:56  0.000000112 
+# ℹ 9,990 more rows</code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="cronoscan-transactions" class="level1">
+<h1>Transactions</h1>
+<p>Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/stats">transactions</a> of cronoscan api.</p>
+<section id="check-contract-execution-status" class="level2">
+<h2 class="anchored" data-anchor-id="check-contract-execution-status">Check Contract Execution Status</h2>
+<p>Returns the status code of a contract execution.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>cro_tx_status <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">txhash =</span> <span class="cn">NULL</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"transaction"</span>, <span class="at">action =</span> <span class="st">"getstatus"</span>, <span class="at">txhash =</span> txhash, <span class="at">apikey =</span> api_key)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">Sys.time</span>(), <span class="at">txhash =</span> txhash, <span class="at">status =</span> out<span class="sc">$</span>status, <span class="at">message =</span> out<span class="sc">$</span>message, <span class="at">isError =</span> out<span class="sc">$</span>result<span class="sc">$</span>isError, <span class="at">description =</span> out<span class="sc">$</span>result<span class="sc">$</span>errDescription)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-4" class="level3">
+<h3 class="anchored" data-anchor-id="example-4">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_tx_status</span>(<span class="at">txhash =</span> <span class="st">"0x99c7549fc1fb8d929b53383b0ee3709c9fe0d79ec60d71a0d4f2b1ce4805f118"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  date                txhash                  status message isError description
+  &lt;dttm&gt;              &lt;chr&gt;                   &lt;chr&gt;  &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;      
+1 2023-10-21 17:31:09 0x99c7549fc1fb8d929b53… 1      OK      0       ""         </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="check-transaction-receipt-status" class="level2">
+<h2 class="anchored" data-anchor-id="check-transaction-receipt-status">Check Transaction Receipt Status</h2>
+<p>Returns the status code of a transaction execution.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>cro_tx_receipt_status <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">txhash =</span> <span class="cn">NULL</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"transaction"</span>, <span class="at">action =</span> <span class="st">"gettxreceiptstatus"</span>, <span class="at">txhash =</span> txhash, <span class="at">apikey =</span> api_key)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">Sys.time</span>(), <span class="at">txhash =</span> txhash, <span class="at">status =</span> out<span class="sc">$</span>status, <span class="at">message =</span> out<span class="sc">$</span>message)</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-5" class="level3">
+<h3 class="anchored" data-anchor-id="example-5">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_tx_receipt_status</span>(<span class="at">txhash =</span> <span class="st">"0x99c7549fc1fb8d929b53383b0ee3709c9fe0d79ec60d71a0d4f2b1ce4805f118"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+  date                txhash                                      status message
+  &lt;dttm&gt;              &lt;chr&gt;                                       &lt;chr&gt;  &lt;chr&gt;  
+1 2023-10-21 17:31:09 0x99c7549fc1fb8d929b53383b0ee3709c9fe0d79e… 1      OK     </code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="cronoscan-blocks" class="level1">
+<h1>Blocks</h1>
+<p>Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/blocks">Blocks</a> of cronoscan api.</p>
+<section id="get-block-rewards-by-blockno" class="level2">
+<h2 class="anchored" data-anchor-id="get-block-rewards-by-blockno">Get Block Rewards by BlockNo</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>cro_block_reward <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">block =</span> <span class="dv">1</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"block"</span>, <span class="at">action =</span> <span class="st">'getblockreward'</span>, <span class="at">blockno =</span> block, <span class="at">apikey =</span> api_key)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_cols</span>(out<span class="sc">$</span>result)</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">mutate</span>(output, </span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">blockReward =</span> <span class="fu">rescale_decimals</span>(blockReward, <span class="dv">18</span>),</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">timeStamp =</span> <span class="fu">as.numeric</span>(timeStamp),</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">timeStamp =</span> <span class="fu">as.POSIXct</span>(timeStamp, <span class="at">origin =</span> <span class="st">"1970-01-01"</span>))</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-6" class="level3">
+<h3 class="anchored" data-anchor-id="example-6">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_block_reward</span>(<span class="dv">130234</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 5
+  blockNumber timeStamp           blockMiner    blockReward uncleInclusionReward
+  &lt;chr&gt;       &lt;dttm&gt;              &lt;chr&gt;               &lt;dbl&gt; &lt;chr&gt;               
+1 130234      2021-11-16 12:50:45 0x4f87a3f99b…        14.4 0                   </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="get-estimated-block-countdown-time-by-blockno" class="level2">
+<h2 class="anchored" data-anchor-id="get-estimated-block-countdown-time-by-blockno">Get Estimated Block Countdown Time by BlockNo</h2>
+</section>
+<section id="get-block-number-by-timestamp" class="level2">
+<h2 class="anchored" data-anchor-id="get-block-number-by-timestamp">Get Block Number by Timestamp</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>cro_block_number <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">date =</span> <span class="fu">Sys.time</span>(), <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.numeric</span>(date)){</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    date <span class="ot">&lt;-</span> <span class="fu">format</span>(<span class="fu">as.numeric</span>(<span class="fu">as.POSIXct</span>(date)))</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"block"</span>, </span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">action =</span> <span class="st">'getblocknobytime'</span>, </span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">timestamp =</span> date, </span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>                <span class="at">closest =</span> <span class="st">"before"</span>, </span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>                <span class="at">apikey =</span> api_key)</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">timeStamp =</span> <span class="fu">as.POSIXct</span>(<span class="fu">as.numeric</span>(date), <span class="at">origin =</span> <span class="st">"1970-01-01"</span>), </span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">blockNumber =</span> <span class="fu">as.numeric</span>(out<span class="sc">$</span>result))</span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-7" class="level3">
+<h3 class="anchored" data-anchor-id="example-7">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_block_number</span>(<span class="at">date =</span> <span class="st">"2022-01-01 10:45:00"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 2
+  timeStamp           blockNumber
+  &lt;dttm&gt;                    &lt;dbl&gt;
+1 2022-01-01 10:45:00      824421</code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="cronoscan-proxy" class="level1">
+<h1>Proxy</h1>
+<p>Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/geth-parity-proxy">Proxy</a> of cronoscan api.</p>
+<section id="eth_blocknumber" class="level2">
+<h2 class="anchored" data-anchor-id="eth_blocknumber">eth_blockNumber</h2>
+<p>Returns the number of most recent block</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>cro_last_block <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"proxy"</span>, <span class="at">action =</span> <span class="st">'eth_blockNumber'</span>, <span class="at">apikey =</span> api_key)</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.integer</span>(<span class="fu">as.hexmode</span>(out<span class="sc">$</span>result))</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-8" class="level3">
+<h3 class="anchored" data-anchor-id="example-8">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_last_block</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 10773800</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="eth_gettransactioncount" class="level2">
+<h2 class="anchored" data-anchor-id="eth_gettransactioncount">eth_getTransactionCount</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>cro_account_tx_count <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">address =</span> <span class="cn">NULL</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"proxy"</span>, <span class="at">action =</span> <span class="st">'eth_getTransactionCount'</span>, <span class="at">address =</span> address, <span class="at">tag =</span> <span class="st">"latest"</span>, <span class="at">apikey =</span> api_key)</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(out)) {</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>    txcount <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">as.hexmode</span>(out<span class="sc">$</span>result))</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>    txcount <span class="ot">&lt;-</span> <span class="cn">NA_integer_</span></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(txcount)</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-9" class="level3">
+<h3 class="anchored" data-anchor-id="example-9">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_tx_count</span>(<span class="at">address =</span> sample_account)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 960</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="eth_gasprice-in-progress" class="level2">
+<h2 class="anchored" data-anchor-id="eth_gasprice-in-progress">eth_gasPrice (in progress)</h2>
+<p>Returns the current price per gas in wei.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>cro_gas_price <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"proxy"</span>, <span class="at">action =</span> <span class="st">'eth_gasPrice'</span>, <span class="at">apikey =</span> api_key)</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(out)) {</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    txcount <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">as.hexmode</span>(out<span class="sc">$</span>result))</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    txcount <span class="ot">&lt;-</span> <span class="cn">NA_integer_</span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(txcount)</span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="cronoscan-tokens" class="level1">
+<h1>Tokens</h1>
+<p>Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/tokens">Tokens</a> of cronoscan api.</p>
+<section id="get-crc-20-token-account-balance-by-contractaddress" class="level2">
+<h2 class="anchored" data-anchor-id="get-crc-20-token-account-balance-by-contractaddress">Get CRC-20 Token Account Balance by ContractAddress</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>cro_crc_supply <span class="ot">&lt;-</span> <span class="cf">function</span>(contract, <span class="at">decimals =</span> <span class="dv">18</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"stats"</span>, <span class="at">action =</span> <span class="st">'tokensupply'</span>, <span class="at">contractaddress =</span> contract, <span class="at">apikey =</span> api_key)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">Sys.time</span>(), </span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">contract =</span> contract, </span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">supply =</span> <span class="fu">rescale_decimals</span>(out<span class="sc">$</span>result, <span class="at">decimals =</span> decimals))</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-10" class="level3">
+<h3 class="anchored" data-anchor-id="example-10">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_crc_supply</span>(<span class="at">contract =</span> wcro)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  date                contract                                       supply
+  &lt;dttm&gt;              &lt;chr&gt;                                           &lt;dbl&gt;
+1 2023-10-21 17:31:19 0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23 843305618.</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="get-crc-20-token-account-balance-by-contractaddress-1" class="level2">
+<h2 class="anchored" data-anchor-id="get-crc-20-token-account-balance-by-contractaddress-1">Get CRC-20 Token Account Balance by ContractAddress</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get CRC20-Token Account Balance for TokenContractAddress</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>cro_account_crc_balance <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">account =</span> <span class="cn">NULL</span>, <span class="at">contract =</span> <span class="cn">NULL</span>, <span class="at">decimals =</span> <span class="dv">18</span>, <span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  query <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"account"</span>, <span class="at">action =</span> <span class="st">'tokenbalance'</span>, <span class="at">contractaddress =</span> contract, <span class="at">address =</span> account, <span class="at">tag =</span> <span class="st">"latest"</span>, <span class="at">apikey =</span> api_key)</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  response <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> query)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">Sys.time</span>(), </span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">address =</span> account, </span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">contract =</span> contract, </span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">balance =</span> <span class="fu">rescale_decimals</span>(response<span class="sc">$</span>result, <span class="at">decimals =</span> decimals))</span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-11" class="level3">
+<h3 class="anchored" data-anchor-id="example-11">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_account_crc_balance</span>(<span class="at">account =</span> <span class="st">"0xbf62c67eA509E86F07c8c69d0286C0636C50270b"</span>, <span class="co"># LP VVS-CRO </span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">contract =</span> wcro)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+  date                address                                   contract balance
+  &lt;dttm&gt;              &lt;chr&gt;                                     &lt;chr&gt;      &lt;dbl&gt;
+1 2023-10-21 17:31:20 0xbf62c67eA509E86F07c8c69d0286C0636C5027… 0x5C7F8…  5.12e8</code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="cronoscan-stats" class="level1">
+<h1>Stats</h1>
+<p>Endpoint <a target="_blank" href="https://docs.cronoscan.com/api-endpoints/stats-1">Stats</a> of cronoscan api.</p>
+<section id="get-total-supply-of-cro-on-the-cronos-chain-chain" class="level2">
+<h2 class="anchored" data-anchor-id="get-total-supply-of-cro-on-the-cronos-chain-chain">Get Total Supply of CRO on the Cronos Chain Chain</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>cro_supply <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">api_key =</span> <span class="fu">cro_api_key</span>()){</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"stats"</span>, <span class="at">action =</span> <span class="st">"supply"</span>, <span class="at">apikey =</span> api_key))</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">Sys.time</span>(), <span class="at">supply =</span> <span class="fu">rescale_decimals</span>(out<span class="sc">$</span>result, <span class="dv">18</span>))</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-12" class="level3">
+<h3 class="anchored" data-anchor-id="example-12">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_supply</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 2
+  date                     supply
+  &lt;dttm&gt;                    &lt;dbl&gt;
+1 2023-10-21 17:31:23 30000000000</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="get-cro-last-price" class="level2">
+<h2 class="anchored" data-anchor-id="get-cro-last-price">Get CRO Last Price</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>cro_price <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">api_key =</span> <span class="fu">cro_api_key</span>(), <span class="at">btc =</span> <span class="cn">FALSE</span>){</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">Api</span>(<span class="at">url =</span> cro_env<span class="sc">$</span>base_url, <span class="at">path =</span> <span class="fu">c</span>(<span class="st">"api"</span>), <span class="at">query =</span> <span class="fu">list</span>(<span class="at">module =</span> <span class="st">"stats"</span>, <span class="at">action =</span> <span class="st">"ethprice"</span>, <span class="at">apikey =</span> api_key))</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (btc){</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>    out<span class="sc">$</span>result<span class="sc">$</span>ethbtc_timestamp <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(out<span class="sc">$</span>result<span class="sc">$</span>ethbtc_timestamp)</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>    out<span class="sc">$</span>result<span class="sc">$</span>ethbtc <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(out<span class="sc">$</span>result<span class="sc">$</span>ethbtc)</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>    output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">as.POSIXct</span>(out<span class="sc">$</span>result<span class="sc">$</span>ethbtc_timestamp, <span class="at">origin =</span> <span class="st">"1970-01-01"</span>), <span class="at">pair =</span> <span class="st">"CROBTC"</span>, <span class="at">last =</span> out<span class="sc">$</span>result<span class="sc">$</span>ethbtc)</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>    out<span class="sc">$</span>result<span class="sc">$</span>ethusd_timestamp <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(out<span class="sc">$</span>result<span class="sc">$</span>ethusd_timestamp)</span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>    out<span class="sc">$</span>result<span class="sc">$</span>ethusd <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(out<span class="sc">$</span>result<span class="sc">$</span>ethusd)</span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>    output <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">date =</span> <span class="fu">as.POSIXct</span>(out<span class="sc">$</span>result<span class="sc">$</span>ethusd_timestamp, <span class="at">origin =</span> <span class="st">"1970-01-01"</span>), <span class="at">pair =</span> <span class="st">"CROUSD"</span>, <span class="at">last =</span> out<span class="sc">$</span>result<span class="sc">$</span>ethusd)</span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(output)</span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="example-13" class="level3">
+<h3 class="anchored" data-anchor-id="example-13">Example</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_price</span>(<span class="at">btc =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  date                pair     last
+  &lt;dttm&gt;              &lt;chr&gt;   &lt;dbl&gt;
+1 2023-10-21 17:30:27 CROUSD 0.0534</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cro_price</span>(<span class="at">btc =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  date                pair         last
+  &lt;dttm&gt;              &lt;chr&gt;       &lt;dbl&gt;
+1 2023-10-21 17:29:53 CROBTC 0.00000179</code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

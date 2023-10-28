@@ -1,0 +1,7 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+# Accounts [<a target="_blank" href="https://docs.cronoscan.com/api-endpoints/accounts">W</a>]{style="border: 2px black; padding: 2px; font-size:20px; font-style: normal; font-weight: normal;"} {#cronoscan-accounts}
